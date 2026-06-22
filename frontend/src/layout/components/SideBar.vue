@@ -24,12 +24,10 @@
 
     <!-- 导航菜单区域 -->
     <div class="sidebar__menu-wrap">
-      <div
+      <EmptyHolder
         v-if="menuList.length === 0"
-        class="sidebar__menu-empty"
-      >
-        菜单加载中
-      </div>
+        text="菜单加载中"
+      />
       <el-menu
         v-else
         :default-active="activeRoute"
@@ -95,6 +93,7 @@ import { useRoute } from 'vue-router'
 import { DArrowLeft, DArrowRight, UserFilled, Setting } from '@element-plus/icons-vue'
 import { useLayoutStore } from '@/stores/useLayout'
 import type { MenuItem } from '@/types/menu'
+import EmptyHolder from '@/components/EmptyHolder.vue'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
@@ -178,13 +177,6 @@ const logoIcon = Setting
   overflow-y: auto;
   overflow-x: hidden;
   padding: 8px 0;
-}
-
-.sidebar__menu-empty {
-  padding: 40px 16px;
-  text-align: center;
-  color: var(--text-placeholder);
-  font-size: 13px;
 }
 
 .sidebar__menu {
