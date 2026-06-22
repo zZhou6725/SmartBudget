@@ -221,3 +221,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# 开发提示词（仅本地参考，不进版本管理）
+开发提示词*.md
+
+# Node.js
+node_modules/
