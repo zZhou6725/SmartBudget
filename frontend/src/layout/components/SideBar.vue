@@ -90,7 +90,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { DArrowLeft, DArrowRight, UserFilled, Setting } from '@element-plus/icons-vue'
+import { DArrowLeft, DArrowRight, UserFilled, Setting, HomeFilled, Money, Wallet } from '@element-plus/icons-vue'
 import { useLayoutStore } from '@/stores/useLayout'
 import type { MenuItem } from '@/types/menu'
 import EmptyHolder from '@/components/EmptyHolder.vue'
@@ -105,8 +105,12 @@ const sidebarWidth = computed(() =>
 
 const activeRoute = computed(() => route.path)
 
-/** 菜单列表 — 后续从路由配置注入，禁止硬编码 */
-const menuList = ref<MenuItem[]>([])
+/** 菜单列表 — 每完成一个模块追加对应菜单项 */
+const menuList = ref<MenuItem[]>([
+  { id: 'workbench', title: '工作台首页', icon: HomeFilled, path: '/workbench' },
+  { id: 'expense', title: '费用报销管理', icon: Money, path: '/expense' },
+  { id: 'budget', title: '预算管理', icon: Wallet, path: '/budget' },
+])
 
 /** 预留：用户信息绑定 */
 const userName = ref('')

@@ -20,7 +20,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/expense/index.vue'),
         meta: { title: '费用报销' },
       },
-      // { path: 'budget', name: 'Budget', component: ..., meta: { title: '预算管理' } },
+      {
+        path: 'budget',
+        name: 'Budget',
+        component: () => import('@/views/budget/index.vue'),
+        meta: { title: '预算管理' },
+      },
       // { path: 'ai-assistant', name: 'AIAssistant', component: ..., meta: { title: 'AI财务助手' } },
       // { path: 'dashboard', name: 'Dashboard', component: ..., meta: { title: '数据看板' } },
       // { path: 'message', name: 'Message', component: ..., meta: { title: '消息预警' } },
