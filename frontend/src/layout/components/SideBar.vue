@@ -90,7 +90,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { DArrowLeft, DArrowRight, UserFilled, Setting, HomeFilled, Money, Wallet, ChatDotRound } from '@element-plus/icons-vue'
+import { DArrowLeft, DArrowRight, UserFilled, Setting, HomeFilled, Money, Wallet } from '@element-plus/icons-vue'
 import { useLayoutStore } from '@/stores/useLayout'
 import type { MenuItem } from '@/types/menu'
 import EmptyHolder from '@/components/EmptyHolder.vue'
@@ -110,7 +110,6 @@ const menuList = ref<MenuItem[]>([
   { id: 'workbench', title: '工作台首页', icon: HomeFilled, path: '/workbench' },
   { id: 'expense', title: '费用报销管理', icon: Money, path: '/expense' },
   { id: 'budget', title: '预算管理', icon: Wallet, path: '/budget' },
-  { id: 'ai', title: 'AI财务助手', icon: ChatDotRound, path: '/ai-assistant' },
 ])
 
 /** 预留：用户信息绑定 */
