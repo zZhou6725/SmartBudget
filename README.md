@@ -57,7 +57,7 @@ FinBalance-Project
 - [x] 阶段0：项目初始化底座（core/config/database/alembic）
 - [ ] 阶段3：业务模块
   - [x] 工作台 API（overview / pending-approvals / expense-trend）
-  - [ ] 费用报销 CRUD 接口
+  - [x] 费用报销 CRUD 接口（6端点：list/summary/detail/create/update/delete）
   - [ ] 预算管理接口
   - [ ] AI 财务助手接口
   - [ ] 数据看板接口
