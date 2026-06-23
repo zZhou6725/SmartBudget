@@ -58,7 +58,7 @@ FinBalance-Project
 - [ ] 阶段3：业务模块
   - [x] 工作台 API（overview / pending-approvals / expense-trend）
   - [x] 费用报销 CRUD 接口（6端点：list/summary/detail/create/update/delete）
-  - [ ] 预算管理接口
+  - [x] 预算管理接口（7端点：list/summary/detail/create/update/adjust/delete）
   - [ ] AI 财务助手接口
   - [ ] 数据看板接口
   - [ ] 消息推送接口
