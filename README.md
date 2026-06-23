@@ -54,7 +54,16 @@ FinBalance-Project
 - [ ] 阶段5：全局自检与部署文档
 
 ### 后端
-- [ ] 阶段0：项目初始化底座（待开发）
+- [x] 阶段0：项目初始化底座（core/config/database/alembic）
+- [ ] 阶段3：业务模块
+  - [x] 工作台 API（overview / pending-approvals / expense-trend）
+  - [ ] 费用报销 CRUD 接口
+  - [ ] 预算管理接口
+  - [ ] AI 财务助手接口
+  - [ ] 数据看板接口
+  - [ ] 消息推送接口
+  - [ ] RBAC 用户角色接口
+  - [ ] 用户信息修改接口
 
 ## 快速启动
 
@@ -65,9 +74,10 @@ npm install
 npm run dev
 ```
 
-### 后端（待开发）
+### 后端
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
+# Swagger → http://127.0.0.1:8000/docs
 ```
