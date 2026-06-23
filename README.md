@@ -43,7 +43,7 @@ FinBalance-Project
 - [x] 阶段2：全局公共组件库（EmptyHolder/PageCard/StatCard/TableWrapper/ChartContainer/ChatContainer）
 - [ ] 阶段3：业务模块
   - [x] 工作台首页（概览统计/待办审批/支出趋势）
-  - [ ] 费用报销页面
+  - [x] 费用报销页面（筛选/统计/CRUD/详情抽屉）
   - [ ] 预算管理页面
   - [ ] AI 财务助手
   - [ ] 数据看板

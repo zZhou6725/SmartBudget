@@ -14,7 +14,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '工作台首页' },
       },
       // 后续业务路由在此添加：
-      // { path: 'expense', name: 'Expense', component: ..., meta: { title: '费用报销' } },
+      {
+        path: 'expense',
+        name: 'Expense',
+        component: () => import('@/views/expense/index.vue'),
+        meta: { title: '费用报销' },
+      },
       // { path: 'budget', name: 'Budget', component: ..., meta: { title: '预算管理' } },
       // { path: 'ai-assistant', name: 'AIAssistant', component: ..., meta: { title: 'AI财务助手' } },
       // { path: 'dashboard', name: 'Dashboard', component: ..., meta: { title: '数据看板' } },
