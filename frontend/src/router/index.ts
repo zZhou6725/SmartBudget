@@ -32,7 +32,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/ai-assistant/index.vue'),
         meta: { title: 'AI财务助手' },
       },
-      // { path: 'dashboard', name: 'Dashboard', component: ..., meta: { title: '数据看板' } },
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/dashboard/index.vue'),
+        meta: { title: '数据看板' },
+      },
       // { path: 'message', name: 'Message', component: ..., meta: { title: '消息预警' } },
       // { path: 'organization', name: 'Organization', component: ..., meta: { title: '组织权限' } },
       // { path: 'personal', name: 'Personal', component: ..., meta: { title: '个人中心' } },
