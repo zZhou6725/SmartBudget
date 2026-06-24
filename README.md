@@ -51,33 +51,53 @@ FinBalance-Project
   - [x] 组织权限页（部门管理+用户管理 Tab切换）
   - [x] 个人中心（头像+基本信息表单+修改密码）
 - [x] 阶段4：登录页面（粒子动画+JWT鉴权）
-- [ ] 阶段5：全局自检与部署文档
+- [x] 阶段5：前后端联调（axios实例+API代理+8模块API解封）
 
 ### 后端
 - [x] 阶段0：项目初始化底座（core/config/database/alembic）
-- [ ] 阶段3：业务模块
+- [x] 阶段3：业务模块（8/8 全部完成）
   - [x] 工作台 API（overview / pending-approvals / expense-trend）
-  - [x] 费用报销 CRUD 接口（6端点：list/summary/detail/create/update/delete）
-  - [x] 预算管理接口（7端点：list/summary/detail/create/update/adjust/delete）
-  - [x] AI 财务助手（快捷提问 + ChatContainer对话）接口
-  - [x] 数据看板（4象限图表：趋势/排名/占比/预算执行）接口
-  - [ ] 消息推送接口
-  - [ ] RBAC 用户角色接口
-  - [ ] 用户信息修改接口
+  - [x] 费用报销 CRUD 接口（6端点）
+  - [x] 预算管理接口（7端点）
+  - [x] AI 财务助手接口
+  - [x] 数据看板接口（4端点聚合查询）
+  - [x] 消息预警接口（5端点CRUD）
+  - [x] 组织权限接口（8端点：部门+用户CRUD）
+  - [x] 个人中心接口（3端点：获取/编辑/改密码）
+- [x] 阶段4：JWT鉴权（登录+Bearer验证）
+- [x] 阶段5：数据库打通（MySQL+真实查询+种子数据）
 
 ## 快速启动
 
-### 前端
+### 1. 数据库初始化
 ```bash
-cd frontend
-npm install
-npm run dev
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS finbalance DEFAULT CHARACTER SET utf8mb4;"
+cp backend/.env.example backend/.env  # 编辑填入数据库密码
+cd backend
+alembic upgrade head          # 创建5张表
+python seed.py                # 插入演示数据
 ```
 
-### 后端
+### 2. 后端
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 # Swagger → http://127.0.0.1:8000/docs
 ```
+
+### 3. 前端
+```bash
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+### 登录凭证
+
+| 用户名 | 密码 | 角色 |
+|--------|------|------|
+| admin | admin123 | 管理员 |
+| zhangsan | 123456 | 部门经理 |
+| lisi | 123456 | 财务 |

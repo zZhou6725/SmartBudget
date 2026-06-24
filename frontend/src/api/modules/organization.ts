@@ -1,19 +1,35 @@
-import type { ApiResponse, PageResult } from '@/types/global'
-import type { DeptItem, DeptForm, UserItem, UserForm, UserRole } from '@/types/organization'
+import http from '@/api/index'
+import type { PageResult } from '@/types/global'
+import type { DeptItem, DeptForm, UserItem, UserForm } from '@/types/organization'
 
-// import http from '@/api/index'
+export async function getDeptList() {
+  return http.get<DeptItem[]>('/departments')
+}
 
-// Department CRUD
-// export async function getDeptList(): Promise<ApiResponse<DeptItem[]>> { ... }
-// export async function createDept(data: DeptForm): Promise<ApiResponse<DeptItem>> { ... }
-// export async function updateDept(id: number, data: DeptForm): Promise<ApiResponse<DeptItem>> { ... }
-// export async function deleteDept(id: number): Promise<ApiResponse<null>> { ... }
+export async function createDept(data: DeptForm) {
+  return http.post<DeptItem>('/departments', data as Record<string, unknown>)
+}
 
-// User CRUD
-// export async function getUserList(params: Record<string, unknown>): Promise<ApiResponse<PageResult<UserItem>>> { ... }
-// export async function createUser(data: UserForm): Promise<ApiResponse<UserItem>> { ... }
-// export async function updateUser(id: number, data: Partial<UserForm>): Promise<ApiResponse<UserItem>> { ... }
-// export async function assignRole(id: number, role: UserRole): Promise<ApiResponse<null>> { ... }
-// export async function deleteUser(id: number): Promise<ApiResponse<null>> { ... }
+export async function updateDept(id: number, data: DeptForm) {
+  return http.put<DeptItem>(`/departments/${id}`, data as Record<string, unknown>)
+}
 
-export {}
+export async function deleteDept(id: number) {
+  return http.del<null>(`/departments/${id}`)
+}
+
+export async function getUserList(params: Record<string, unknown>) {
+  return http.get<PageResult<UserItem>>('/users', params)
+}
+
+export async function createUser(data: UserForm) {
+  return http.post<UserItem>('/users', data as Record<string, unknown>)
+}
+
+export async function updateUser(id: number, data: Partial<UserForm>) {
+  return http.put<UserItem>(`/users/${id}`, data as Record<string, unknown>)
+}
+
+export async function deleteUser(id: number) {
+  return http.del<null>(`/users/${id}`)
+}
