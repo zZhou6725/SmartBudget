@@ -18,5 +18,7 @@ async def update_profile(data: ProfileUpdate): return ApiResponse(data=await pro
 
 @router.put("/password", response_model=ApiResponse)
 async def change_password(data: PasswordChange):
-    await profile_service.change_password(FAKE_USER_ID, data)
+    ok = await profile_service.change_password(FAKE_USER_ID, data)
+    if not ok:
+        return ApiResponse(code=400, msg="原密码错误")
     return ApiResponse(msg="密码修改成功")
