@@ -50,7 +50,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/organization/index.vue'),
         meta: { title: '组织权限管理' },
       },
-      // { path: 'personal', name: 'Personal', component: ..., meta: { title: '个人中心' } },
+      {
+        path: 'personal',
+        name: 'Personal',
+        component: () => import('@/views/personal/index.vue'),
+        meta: { title: '个人中心' },
+      },
     ],
   },
 ]
