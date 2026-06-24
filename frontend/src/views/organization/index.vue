@@ -32,7 +32,7 @@
 
         <!-- 用户管理 -->
         <el-tab-pane label="用户管理" name="user">
-          <TableWrapper :data="userList" :empty="userList.length === 0" :show-pagination="true" :total="userTotal" :current-page="userPage" :page-size="10" @page-change="p => userPage = p" @size-change="s => { }">
+          <TableWrapper :data="userList" :empty="userList.length === 0" :show-pagination="true" :total="userTotal" :current-page="userPage" :page-size="userPageSize" @page-change="handleUserPageChange" @size-change="handleUserSizeChange">
             <el-table-column label="用户名" prop="username" width="120" />
             <el-table-column label="姓名" prop="realName" width="100" />
             <el-table-column label="部门" prop="deptName" width="120" />
@@ -122,6 +122,7 @@ const deptForm = ref<DeptForm>({ name: '', manager: '' })
 const userList = ref<UserItem[]>([])
 const userTotal = ref(0)
 const userPage = ref(1)
+const userPageSize = ref(10)
 const userDialogVisible = ref(false)
 const userIsEdit = ref(false)
 const userEditId = ref<number | null>(null)
@@ -135,13 +136,15 @@ function fetchDeptList() {
   getDeptList().then(res => { if (res.code === 0) deptList.value = res.data as DeptItem[] }).catch(() => {})
 }
 function fetchUserList() {
-  getUserList({ page: userPage.value, pageSize: 10 }).then(res => {
+  getUserList({ page: userPage.value, page_size: userPageSize.value }).then(res => {
     if (res.code === 0) { userList.value = res.data.items; userTotal.value = res.data.total }
   }).catch(() => {})
 }
+function handleUserPageChange(p: number) { userPage.value = p }
+function handleUserSizeChange(s: number) { userPageSize.value = s; userPage.value = 1 }
 
-watch(activeTab, (tab) => { if (tab === 'dept') fetchDeptList(); else fetchUserList() })
-watch(userPage, () => { fetchUserList() })
+watch(activeTab, (tab) => { if (tab === 'dept') fetchDeptList(); else { userPage.value = 1; fetchUserList() } })
+watch([userPage, userPageSize], () => { if (activeTab.value === 'user') fetchUserList() })
 
 function openDeptDialog(row?: DeptItem) {
   deptIsEdit.value = !!row
