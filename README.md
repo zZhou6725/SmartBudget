@@ -46,7 +46,7 @@ FinBalance-Project
   - [x] 费用报销页面（筛选/统计/CRUD/详情抽屉）
   - [x] 预算管理页面（统计/筛选/CRUD/预算调整）
   - [x] AI 财务助手（快捷提问 + ChatContainer对话）
-  - [ ] 数据看板
+  - [x] 数据看板（4象限图表：趋势/排名/占比/预算执行）
   - [ ] 消息预警中心
   - [ ] 组织权限页
   - [ ] 个人中心
@@ -60,7 +60,7 @@ FinBalance-Project
   - [x] 费用报销 CRUD 接口（6端点：list/summary/detail/create/update/delete）
   - [x] 预算管理接口（7端点：list/summary/detail/create/update/adjust/delete）
   - [x] AI 财务助手（快捷提问 + ChatContainer对话）接口
-  - [ ] 数据看板接口
+  - [x] 数据看板（4象限图表：趋势/排名/占比/预算执行）接口
   - [ ] 消息推送接口
   - [ ] RBAC 用户角色接口
   - [ ] 用户信息修改接口
