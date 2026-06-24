@@ -1,19 +1,24 @@
 """Alembic 迁移环境配置"""
+import sys
+from pathlib import Path
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from app.database import Base
-from app.models import Budget, Expense  # noqa: F401 确保模型被加载
+from app.core.config import settings
+from app.models import Budget, Expense, Notification, Department, User  # noqa: F401
 
 config = context.config
+config.set_main_option("sqlalchemy.url", settings.db_url)
 fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
 
 def run_migrations_offline():
-    """离线迁移（生成 SQL 脚本）"""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
     with context.begin_transaction():
@@ -21,7 +26,6 @@ def run_migrations_offline():
 
 
 def run_migrations_online():
-    """在线迁移（直接执行）"""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
