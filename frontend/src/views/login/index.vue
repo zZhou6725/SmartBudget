@@ -123,6 +123,7 @@ async function handleLogin() {
       return
     }
     localStorage.setItem('finbalance-token', res.data.token)
+    localStorage.setItem('finbalance-user', JSON.stringify(res.data.user_info))
     router.push('/workbench')
   } catch {
     errorMsg.value = '网络错误，请稍后重试'
