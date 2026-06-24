@@ -1,10 +1,14 @@
-import type { ApiResponse } from '@/types/global'
+import http from '@/api/index'
 import type { UserProfile, ProfileForm, PasswordForm } from '@/types/profile'
 
-// import http from '@/api/index'
+export async function getProfile() {
+  return http.get<UserProfile>('/profile')
+}
 
-// export async function getProfile(): Promise<ApiResponse<UserProfile>> { ... }
-// export async function updateProfile(data: ProfileForm): Promise<ApiResponse<UserProfile>> { ... }
-// export async function changePassword(data: PasswordForm): Promise<ApiResponse<null>> { ... }
+export async function updateProfile(data: ProfileForm) {
+  return http.put<UserProfile>('/profile', data as Record<string, unknown>)
+}
 
-export {}
+export async function changePassword(data: PasswordForm) {
+  return http.put<null>('/profile/password', data as Record<string, unknown>)
+}

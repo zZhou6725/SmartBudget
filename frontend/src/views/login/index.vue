@@ -84,6 +84,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock, Setting } from '@element-plus/icons-vue'
+import { login } from '@/api/modules/auth'
 
 const router = useRouter()
 
@@ -115,15 +116,20 @@ async function handleLogin() {
   if (!form.password) { shakePwd.value = true; return }
 
   loading.value = true
-  // TODO: 调用 login API
-  // const res = await login({ username: form.username, password: form.password })
-  await new Promise(r => setTimeout(r, 1000))
-  loading.value = false
-
-  // TODO: 真实的错误处理
-  // if (res.code !== 0) { errorMsg.value = res.msg; return }
-  // store token → localStorage
-  // router.push('/workbench')
+  try {
+    const res = await login({ username: form.username, password: form.password })
+    if (res.code !== 0) {
+      errorMsg.value = res.msg || '登录失败'
+      return
+    }
+    localStorage.setItem('finbalance-token', res.data.token)
+    localStorage.setItem('finbalance-user', JSON.stringify(res.data.user_info))
+    router.push('/workbench')
+  } catch {
+    errorMsg.value = '网络错误，请稍后重试'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

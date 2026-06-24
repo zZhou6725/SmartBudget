@@ -34,10 +34,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { Bell, UserFilled, ArrowDown } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/useLayout'
 
+const router = useRouter()
 const layoutStore = useLayoutStore()
 
 const sidebarWidth = computed(() =>
@@ -46,19 +48,27 @@ const sidebarWidth = computed(() =>
     : 'var(--sidebar-width-expand)'
 )
 
-/** 预留：用户信息绑定 */
-const userName = ref('')
-const userAvatar = ref('')
+interface UserInfo { username: string; real_name: string; avatar: string }
+const userInfo = ref<UserInfo | null>(null)
+const userName = computed(() => userInfo.value?.real_name || userInfo.value?.username || '')
+const userAvatar = computed(() => userInfo.value?.avatar || '')
 
-/** 预留：未读消息数 */
+onMounted(() => {
+  const raw = localStorage.getItem('finbalance-user')
+  if (raw) {
+    try { userInfo.value = JSON.parse(raw) } catch {}
+  }
+})
+
 const unreadCount = ref(0)
 
-/** 预留：下拉菜单事件处理 */
 function handleCommand(command: string) {
-  // TODO: 后续实现对应逻辑
-  // if (command === 'personal') router.push('/personal')
-  // if (command === 'password') openPasswordModal()
-  // if (command === 'logout') logout()
+  if (command === 'personal') router.push('/personal')
+  if (command === 'logout') {
+    localStorage.removeItem('finbalance-token')
+    localStorage.removeItem('finbalance-user')
+    router.push('/login')
+  }
 }
 </script>
 
