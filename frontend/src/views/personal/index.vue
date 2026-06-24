@@ -54,11 +54,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import PageCard from '@/components/PageCard.vue'
 import { RoleMap } from '@/types/organization'
 import type { UserProfile, ProfileForm, PasswordForm } from '@/types/profile'
+import { getProfile, updateProfile, changePassword } from '@/api/modules/profile'
 
 const profile = ref<UserProfile>({
   id: 0, username: '', realName: '', email: '', phone: '', deptName: '', role: '', avatar: '',
@@ -68,9 +70,38 @@ const form = ref<ProfileForm>({ realName: '', email: '', phone: '' })
 const passwordVisible = ref(false)
 const passwordForm = ref<PasswordForm>({ oldPassword: '', newPassword: '' })
 
-function handleSave() { /* TODO */ }
-function openPasswordDialog() { passwordVisible.value = true }
-function handleChangePassword() { passwordVisible.value = false }
+async function fetchProfile() {
+  try {
+    const res = await getProfile()
+    if (res.code === 0) {
+      profile.value = res.data as UserProfile
+      form.value = { realName: res.data.realName || '', email: res.data.email || '', phone: res.data.phone || '' }
+    }
+  } catch { /* ignore */ }
+}
+
+async function handleSave() {
+  try {
+    const res = await updateProfile(form.value)
+    if (res.code === 0) { ElMessage.success('保存成功'); fetchProfile() }
+    else { ElMessage.error(res.msg || '保存失败') }
+  } catch { ElMessage.error('网络错误') }
+}
+
+function openPasswordDialog() {
+  passwordForm.value = { oldPassword: '', newPassword: '' }
+  passwordVisible.value = true
+}
+
+async function handleChangePassword() {
+  try {
+    const res = await changePassword(passwordForm.value)
+    if (res.code === 0) { ElMessage.success('密码修改成功'); passwordVisible.value = false }
+    else { ElMessage.error(res.msg || '密码修改失败') }
+  } catch { ElMessage.error('网络错误') }
+}
+
+onMounted(() => { fetchProfile() })
 </script>
 
 <style scoped>

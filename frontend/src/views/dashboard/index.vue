@@ -45,10 +45,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import PageCard from '@/components/PageCard.vue'
 import ChartContainer from '@/components/ChartContainer.vue'
 import type { TrendItem, DeptRankItem, CategoryPieItem, BudgetExecItem } from '@/types/dashboard'
+import { getTrend, getDeptRank, getCategoryPie, getBudgetExec } from '@/api/modules/dashboard'
 
 const selectedMonth = ref('')
 const selectedDept = ref('')
@@ -59,6 +60,18 @@ const trendData = ref<TrendItem[]>([])
 const deptRankData = ref<DeptRankItem[]>([])
 const categoryPieData = ref<CategoryPieItem[]>([])
 const budgetExecData = ref<BudgetExecItem[]>([])
+
+onMounted(async () => {
+  try {
+    const [trend, rank, pie, exec] = await Promise.all([
+      getTrend(), getDeptRank(), getCategoryPie(), getBudgetExec(),
+    ])
+    if (trend.code === 0) trendData.value = trend.data as TrendItem[]
+    if (rank.code === 0) deptRankData.value = rank.data as DeptRankItem[]
+    if (pie.code === 0) categoryPieData.value = pie.data as CategoryPieItem[]
+    if (exec.code === 0) budgetExecData.value = exec.data as BudgetExecItem[]
+  } catch { /* keep empty state */ }
+})
 </script>
 
 <style scoped>

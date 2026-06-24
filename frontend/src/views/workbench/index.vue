@@ -60,15 +60,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import PageCard from '@/components/PageCard.vue'
 import StatCard from '@/components/StatCard.vue'
 import TableWrapper from '@/components/TableWrapper.vue'
 import ChartContainer from '@/components/ChartContainer.vue'
-import EmptyHolder from '@/components/EmptyHolder.vue'
 import type { WorkbenchOverview, PendingApprovalItem, TrendPoint } from '@/types/workbench'
+import { getWorkbenchOverview, getPendingApprovals, getExpenseTrend } from '@/api/modules/workbench'
 
-/** 概览数据 — 全空初始值 */
 const overview = ref<WorkbenchOverview>({
   totalBudget: null,
   totalExpense: null,
@@ -77,7 +76,6 @@ const overview = ref<WorkbenchOverview>({
   overBudgetDepts: null,
 })
 
-/** 统计卡片配置 — 纯数据绑定 */
 const statCards = computed(() => [
   { title: '总预算', value: overview.value.totalBudget, subtitle: '本年度总预算' },
   { title: '总支出', value: overview.value.totalExpense, subtitle: '本年度累计支出' },
@@ -86,15 +84,12 @@ const statCards = computed(() => [
   { title: '超预算部门', value: overview.value.overBudgetDepts, subtitle: '已超出预算' },
 ])
 
-/** 待审批列表 */
 const pendingList = ref<PendingApprovalItem[]>([])
-
-/** 趋势数据 */
 const trendData = ref<TrendPoint[]>([])
 
-/** 预留：状态标签颜色映射 */
 function statusTagType(status: string): string {
   const map: Record<string, string> = {
+    draft: 'info',
     pending: 'warning',
     approved: 'success',
     rejected: 'danger',
@@ -102,16 +97,18 @@ function statusTagType(status: string): string {
   return map[status] || 'info'
 }
 
-// TODO: mounted 后调用 API 获取数据
-// import { getWorkbenchOverview, getPendingApprovals, getExpenseTrend } from '@/api/modules/workbench'
-// onMounted(async () => {
-//   const res = await getWorkbenchOverview()
-//   overview.value = res.data
-//   const list = await getPendingApprovals({ page: 1, pageSize: 10 })
-//   pendingList.value = list.data.items
-//   const trend = await getExpenseTrend()
-//   trendData.value = trend.data
-// })
+onMounted(async () => {
+  try {
+    const [ov, list, trend] = await Promise.all([
+      getWorkbenchOverview(),
+      getPendingApprovals({ page: 1, pageSize: 10 }),
+      getExpenseTrend(),
+    ])
+    if (ov.code === 0) overview.value = ov.data
+    if (list.code === 0) pendingList.value = list.data.items
+    if (trend.code === 0) trendData.value = trend.data
+  } catch { /* 网络错误时保持空状态 */ }
+})
 </script>
 
 <style scoped>

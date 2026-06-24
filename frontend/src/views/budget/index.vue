@@ -173,46 +173,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
 import TableWrapper from '@/components/TableWrapper.vue'
 import type { BudgetItem, BudgetForm, BudgetAdjustForm, BudgetQuery, BudgetSummary } from '@/types/budget'
+import {
+  getBudgetList, getBudgetSummary, createBudget, updateBudget,
+  adjustBudget, deleteBudget,
+} from '@/api/modules/budget'
 
-/** 统计摘要 */
-const summary = ref<BudgetSummary>({
-  totalBudget: 0,
-  totalUsed: 0,
-  totalRemaining: 0,
-  avgUsageRate: 0,
-})
-
-/** 筛选 */
+const summary = ref<BudgetSummary>({ totalBudget: 0, totalUsed: 0, totalRemaining: 0, avgUsageRate: 0 })
 const query = ref<BudgetQuery>({ keyword: '', page: 1, pageSize: 10 })
 const deptOptions = ref<string[]>([])
 const yearOptions = ref<number[]>([2024, 2025, 2026, 2027])
-
-/** 表格 */
 const tableData = ref<BudgetItem[]>([])
 const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
-
-/** 新增/编辑 */
-const dialogVisible = ref(false)
-const isEdit = ref(false)
-const editId = ref<number | null>(null)
+const dialogVisible = ref(false); const isEdit = ref(false); const editId = ref<number | null>(null)
 const form = ref<BudgetForm>({ deptName: '', year: 2026, totalAmount: null })
-
-/** 调整 */
-const adjustVisible = ref(false)
-const adjustTarget = ref<BudgetItem | null>(null)
+const adjustVisible = ref(false); const adjustTarget = ref<BudgetItem | null>(null)
 const adjustForm = ref<BudgetAdjustForm>({ direction: 'add', amount: null, reason: '' })
 
 function fmt(v: number) { return v ? `¥${v.toLocaleString()}` : '--' }
 function usageColor(rate: number) { return rate > 80 ? 'var(--color-danger)' : rate > 60 ? 'var(--color-warning)' : 'var(--color-primary)' }
 
-function handleQuery() { query.value.page = 1 }
-function handleReset() { query.value = { page: 1, pageSize: 10 } }
-function handlePageChange(p: number) { pagination.page = p }
-function handleSizeChange(s: number) { pagination.pageSize = s }
+async function fetchList() {
+  try {
+    const res = await getBudgetList(query.value)
+    if (res.code === 0) { tableData.value = res.data.items; pagination.total = res.data.total }
+  } catch { /* ignore */ }
+}
+async function fetchSummary() {
+  try {
+    const res = await getBudgetSummary()
+    if (res.code === 0) summary.value = res.data
+  } catch { /* ignore */ }
+}
+
+function handleQuery() { query.value.page = 1; pagination.page = 1; fetchList() }
+function handleReset() { query.value = { page: 1, pageSize: 10 }; pagination.page = 1; pagination.pageSize = 10; fetchList() }
+function handlePageChange(p: number) { pagination.page = p; query.value.page = p; fetchList() }
+function handleSizeChange(s: number) { pagination.pageSize = s; query.value.pageSize = s; query.value.page = 1; pagination.page = 1; fetchList() }
 
 function openCreateDialog() {
   isEdit.value = false; editId.value = null
@@ -224,16 +225,41 @@ function openEditDialog(row: BudgetItem) {
   form.value = { deptName: row.deptName, year: row.year, totalAmount: row.totalAmount }
   dialogVisible.value = true
 }
-function handleSave() { dialogVisible.value = false }
+async function handleSave() {
+  try {
+    let res
+    if (isEdit.value && editId.value) {
+      res = await updateBudget(editId.value, form.value as Record<string, unknown>)
+    } else {
+      res = await createBudget(form.value as Record<string, unknown>)
+    }
+    if (res.code === 0) { ElMessage.success(isEdit.value ? '编辑成功' : '新增成功'); dialogVisible.value = false; fetchList(); fetchSummary() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch { ElMessage.error('网络错误') }
+}
 
 function openAdjustDialog(row: BudgetItem) {
   adjustTarget.value = row
   adjustForm.value = { direction: 'add', amount: null, reason: '' }
   adjustVisible.value = true
 }
-function handleAdjust() { adjustVisible.value = false }
+async function handleAdjust() {
+  if (!adjustTarget.value) return
+  try {
+    const res = await adjustBudget(adjustTarget.value.id, adjustForm.value as Record<string, unknown>)
+    if (res.code === 0) { ElMessage.success('调整成功'); adjustVisible.value = false; fetchList(); fetchSummary() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch { ElMessage.error('网络错误') }
+}
 
-function handleDelete(id: number) { /* TODO */ }
+async function handleDelete(id: number) {
+  try {
+    const res = await deleteBudget(id)
+    if (res.code === 0) { ElMessage.success('删除成功'); fetchList(); fetchSummary() }
+  } catch { ElMessage.error('网络错误') }
+}
+
+onMounted(() => { fetchList(); fetchSummary() })
 </script>
 
 <style scoped>

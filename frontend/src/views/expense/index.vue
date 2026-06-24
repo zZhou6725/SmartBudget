@@ -275,7 +275,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { Paperclip } from '@element-plus/icons-vue'
 import PageCard from '@/components/PageCard.vue'
 import TableWrapper from '@/components/TableWrapper.vue'
@@ -288,127 +289,141 @@ import {
   type ExpenseQuery,
   type ExpenseSummary,
 } from '@/types/expense'
+import {
+  getExpenseList, getExpenseSummary, getExpenseDetail,
+  createExpense, updateExpense, deleteExpense,
+} from '@/api/modules/expense'
 
-/** 筛选参数 */
-const query = ref<ExpenseQuery>({
-  keyword: '',
-  category: undefined,
-  deptName: '',
-  status: undefined,
-  page: 1,
-  pageSize: 10,
-})
+const query = ref<ExpenseQuery>({ keyword: '', page: 1, pageSize: 10 })
 const dateRange = ref<string[]>([])
 
-/** 统计摘要 */
-const summary = ref<ExpenseSummary>({
-  totalAmount: 0,
-  pendingCount: 0,
-  approvedCount: 0,
-  rejectedCount: 0,
-})
-
-/** 表格数据 + 分页 */
+const summary = ref<ExpenseSummary>({ totalAmount: 0, pendingCount: 0, approvedCount: 0, rejectedCount: 0 })
 const tableData = ref<ExpenseItem[]>([])
 const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
 
-/** 部门/预算下拉选项（预留，后续从接口获取） */
 const deptOptions = ref<string[]>([])
 const budgetOptions = ref<{ id: number; name: string; remaining: number }[]>([])
 
-/** 表单 */
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const editId = ref<number | null>(null)
+const formRef = ref()
 const form = ref<ExpenseForm>({
-  title: '',
-  category: 'travel',
-  deptName: '',
-  budgetId: null,
-  amount: null,
-  applyDate: '',
-  remark: '',
+  title: '', category: 'travel', deptName: '', budgetId: null,
+  amount: null, applyDate: '', remark: '',
 })
 
-/** 详情 Drawer */
 const drawerVisible = ref(false)
 const detailItem = ref<ExpenseItem | null>(null)
 
+async function fetchList() {
+  try {
+    const [startDate, endDate] = dateRange.value
+    const q: Record<string, unknown> = {
+      keyword: query.value.keyword || undefined,
+      category: query.value.category || undefined,
+      dept_name: query.value.deptName || undefined,
+      status: query.value.status || undefined,
+      page: query.value.page,
+      page_size: query.value.pageSize,
+    }
+    if (startDate) q.start_date = startDate
+    if (endDate) q.end_date = endDate
+    const res = await getExpenseList(q as ExpenseQuery)
+    if (res.code === 0) {
+      tableData.value = res.data.items
+      pagination.total = res.data.total
+    }
+  } catch { /* ignore */ }
+}
+
+async function fetchSummary() {
+  try {
+    const res = await getExpenseSummary()
+    if (res.code === 0) summary.value = res.data
+  } catch { /* ignore */ }
+}
+
 function handleQuery() {
   query.value.page = 1
-  // TODO: fetch list
+  pagination.page = 1
+  fetchList()
 }
 
 function handleReset() {
   query.value = { keyword: '', page: 1, pageSize: 10 }
   dateRange.value = []
+  pagination.page = 1
+  pagination.pageSize = 10
+  fetchList()
 }
 
 function handlePageChange(page: number) {
   query.value.page = page
   pagination.page = page
-  // TODO: fetch list
+  fetchList()
 }
 
 function handleSizeChange(size: number) {
   query.value.pageSize = size
   pagination.pageSize = size
-  // TODO: fetch list
+  query.value.page = 1
+  pagination.page = 1
+  fetchList()
 }
 
 function openCreateDialog() {
-  isEdit.value = false
-  editId.value = null
-  form.value = {
-    title: '',
-    category: 'travel',
-    deptName: '',
-    budgetId: null,
-    amount: null,
-    applyDate: '',
-    remark: '',
-  }
+  isEdit.value = false; editId.value = null
+  form.value = { title: '', category: 'travel', deptName: '', budgetId: null, amount: null, applyDate: '', remark: '' }
   dialogVisible.value = true
 }
 
 function openEditDialog(row: ExpenseItem) {
-  isEdit.value = true
-  editId.value = row.id
-  form.value = {
-    title: row.title,
-    category: row.category,
-    deptName: row.deptName,
-    budgetId: row.budgetId,
-    amount: row.amount,
-    applyDate: row.applyDate,
-    remark: row.remark,
-  }
+  isEdit.value = true; editId.value = row.id
+  form.value = { title: row.title, category: row.category, deptName: row.deptName, budgetId: row.budgetId, amount: row.amount, applyDate: row.applyDate, remark: row.remark }
   dialogVisible.value = true
 }
 
-function handleSave(status: string) {
-  // TODO: call createExpense or updateExpense API
-  dialogVisible.value = false
+async function handleSave(status: string) {
+  try {
+    const data = { ...form.value, status }
+    let res
+    if (isEdit.value && editId.value) {
+      res = await updateExpense(editId.value, data as Record<string, unknown>)
+    } else {
+      res = await createExpense(data as Record<string, unknown>)
+    }
+    if (res.code === 0) {
+      ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
+      dialogVisible.value = false
+      fetchList(); fetchSummary()
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch { ElMessage.error('网络错误') }
 }
 
-function openDetailDrawer(row: ExpenseItem) {
-  detailItem.value = row
+async function openDetailDrawer(row: ExpenseItem) {
+  try {
+    const res = await getExpenseDetail(row.id)
+    if (res.code === 0) detailItem.value = res.data
+  } catch { detailItem.value = row }
   drawerVisible.value = true
 }
 
-function handleDelete(id: number) {
-  // TODO: call deleteExpense API
+async function handleDelete(id: number) {
+  try {
+    const res = await deleteExpense(id)
+    if (res.code === 0) { ElMessage.success('删除成功'); fetchList(); fetchSummary() }
+  } catch { ElMessage.error('网络错误') }
 }
 
 function statusTagType(status: string): string {
-  const map: Record<string, string> = {
-    draft: 'info',
-    pending: 'warning',
-    approved: 'success',
-    rejected: 'danger',
-  }
+  const map: Record<string, string> = { draft: 'info', pending: 'warning', approved: 'success', rejected: 'danger' }
   return map[status] || 'info'
 }
+
+onMounted(() => { fetchList(); fetchSummary() })
 </script>
 
 <style scoped>
