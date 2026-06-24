@@ -16,6 +16,7 @@ redis>=5.0.0
 
 # 鉴权 jwt
 pyjwt>=2.8.0
+python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 
 # 文件上传、跨域（CORSMiddleware 已内置 FastAPI）
