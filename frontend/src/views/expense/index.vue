@@ -119,28 +119,30 @@
           </template>
         </el-table-column>
         <el-table-column label="申请人" prop="applicant" width="90" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" text type="primary" @click="openDetailDrawer(row)">
-              详情
-            </el-button>
-            <el-button
-              v-if="row.status === 'draft' || row.status === 'pending'"
-              size="small"
-              text
-              type="primary"
-              @click="openEditDialog(row)"
-            >
-              编辑
-            </el-button>
-            <el-popconfirm
-              title="确认删除该报销记录？"
-              @confirm="handleDelete(row.id)"
-            >
-              <template #reference>
-                <el-button size="small" text type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="expense__actions">
+              <el-button size="small" text type="primary" @click="openDetailDrawer(row)">
+                详情
+              </el-button>
+              <el-button
+                v-if="row.status === 'draft' || row.status === 'pending'"
+                size="small"
+                text
+                type="primary"
+                @click="openEditDialog(row)"
+              >
+                编辑
+              </el-button>
+              <el-popconfirm
+                title="确认删除该报销记录？"
+                @confirm="handleDelete(row.id)"
+              >
+                <template #reference>
+                  <el-button size="small" text type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </TableWrapper>
@@ -483,5 +485,10 @@ onMounted(() => { fetchList(); fetchSummary() })
   margin-bottom: 12px;
   padding-left: 8px;
   border-left: 3px solid var(--color-primary);
+}
+.expense__actions {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 </style>
