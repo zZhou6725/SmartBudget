@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings
 
 engine = create_engine(
-    settings.get_db_url(),
+    settings.db_url,
     echo=settings.DEBUG,
     pool_pre_ping=True,
 )
