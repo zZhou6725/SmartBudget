@@ -90,7 +90,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { DArrowLeft, DArrowRight, UserFilled, Setting, HomeFilled, Money, Wallet, ChatDotRound, DataAnalysis } from '@element-plus/icons-vue'
+import { DArrowLeft, DArrowRight, UserFilled, Setting, HomeFilled, Money, Wallet, ChatDotRound, DataAnalysis, Bell } from '@element-plus/icons-vue'
 import { useLayoutStore } from '@/stores/useLayout'
 import type { MenuItem } from '@/types/menu'
 import EmptyHolder from '@/components/EmptyHolder.vue'
@@ -112,6 +112,7 @@ const menuList = ref<MenuItem[]>([
   { id: 'budget', title: '预算管理', icon: Wallet, path: '/budget' },
   { id: 'ai', title: 'AI财务助手', icon: ChatDotRound, path: '/ai-assistant' },
   { id: 'dashboard', title: '数据看板', icon: DataAnalysis, path: '/dashboard' },
+  { id: 'message', title: '消息预警中心', icon: Bell, path: '/message' },
 ])
 
 /** 预留：用户信息绑定 */
