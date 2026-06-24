@@ -2,6 +2,12 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/login/index.vue'),
+    meta: { title: '登录' },
+  },
+  {
     path: '/',
     name: 'Layout',
     component: () => import('@/layout/MainLayout.vue'),
@@ -13,7 +19,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/workbench/index.vue'),
         meta: { title: '工作台首页' },
       },
-      // 后续业务路由在此添加：
       {
         path: 'expense',
         name: 'Expense',
@@ -63,6 +68,15 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// 路由守卫
+router.beforeEach((to, from) => {
+  const token = localStorage.getItem('finbalance-token')
+  const isLoggedIn = !!token
+  if (to.path !== '/login' && !isLoggedIn) {
+    return '/login'
+  }
 })
 
 export default router
