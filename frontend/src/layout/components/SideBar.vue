@@ -33,8 +33,8 @@
         :default-active="activeRoute"
         :collapse="isSidebarCollapse"
         :collapse-transition="false"
-        router
         class="sidebar__menu"
+        @select="handleMenuSelect"
         text-color="var(--text-body)"
         active-text-color="var(--color-primary)"
         background-color="transparent"
@@ -88,14 +88,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { DArrowLeft, DArrowRight, UserFilled, Setting, HomeFilled, Money, Wallet, ChatDotRound, DataAnalysis, Bell, OfficeBuilding, User } from '@element-plus/icons-vue'
 import { useLayoutStore } from '@/stores/useLayout'
 import type { MenuItem } from '@/types/menu'
 import EmptyHolder from '@/components/EmptyHolder.vue'
 
 const route = useRoute()
+const router = useRouter()
 const layoutStore = useLayoutStore()
 
 const isSidebarCollapse = computed(() => layoutStore.isSidebarCollapse)
@@ -105,8 +106,7 @@ const sidebarWidth = computed(() =>
 
 const activeRoute = computed(() => route.path)
 
-/** 菜单列表 — 每完成一个模块追加对应菜单项 */
-const menuList = ref<MenuItem[]>([
+const menuList: MenuItem[] = [
   { id: 'workbench', title: '工作台首页', icon: HomeFilled, path: '/workbench' },
   { id: 'expense', title: '费用报销管理', icon: Money, path: '/expense' },
   { id: 'budget', title: '预算管理', icon: Wallet, path: '/budget' },
@@ -115,11 +115,26 @@ const menuList = ref<MenuItem[]>([
   { id: 'message', title: '消息预警中心', icon: Bell, path: '/message' },
   { id: 'org', title: '组织权限管理', icon: OfficeBuilding, path: '/organization' },
   { id: 'personal', title: '个人中心', icon: User, path: '/personal' },
-])
+]
 
-/** 预留：用户信息绑定 */
+interface StoredUser { username: string; real_name: string; avatar?: string }
 const userName = ref('')
 const userAvatar = ref('')
+
+onMounted(() => {
+  const raw = localStorage.getItem('finbalance-user')
+  if (raw) {
+    try {
+      const u: StoredUser = JSON.parse(raw)
+      userName.value = u.real_name || u.username || ''
+      userAvatar.value = u.avatar || ''
+    } catch { /* ignore */ }
+  }
+})
+
+function handleMenuSelect(index: string) {
+  router.push(index)
+}
 
 /** Logo图标，后续替换为实际品牌图标 */
 const logoIcon = Setting

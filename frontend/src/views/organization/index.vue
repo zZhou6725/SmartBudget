@@ -32,7 +32,7 @@
 
         <!-- 用户管理 -->
         <el-tab-pane label="用户管理" name="user">
-          <TableWrapper :data="userList" :empty="userList.length === 0" :show-pagination="true" :total="userTotal" :current-page="userPage" :page-size="10" @page-change="p => userPage = p" @size-change="s => { }">
+          <TableWrapper :data="userList" :empty="userList.length === 0" :show-pagination="true" :total="userTotal" :current-page="userPage" :page-size="userPageSize" @page-change="handleUserPageChange" @size-change="handleUserSizeChange">
             <el-table-column label="用户名" prop="username" width="120" />
             <el-table-column label="姓名" prop="realName" width="100" />
             <el-table-column label="部门" prop="deptName" width="120" />
@@ -104,44 +104,108 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
 import TableWrapper from '@/components/TableWrapper.vue'
 import { RoleMap, type DeptItem, type DeptForm, type UserItem, type UserForm } from '@/types/organization'
+import { getDeptList, createDept, updateDept, deleteDept, getUserList, createUser, updateUser, deleteUser } from '@/api/modules/organization'
 
 const activeTab = ref('dept')
 
 const deptList = ref<DeptItem[]>([])
 const deptDialogVisible = ref(false)
 const deptIsEdit = ref(false)
+const deptEditId = ref<number | null>(null)
 const deptForm = ref<DeptForm>({ name: '', manager: '' })
 
 const userList = ref<UserItem[]>([])
 const userTotal = ref(0)
 const userPage = ref(1)
+const userPageSize = ref(10)
 const userDialogVisible = ref(false)
 const userIsEdit = ref(false)
+const userEditId = ref<number | null>(null)
 const userForm = ref<UserForm>({ username: '', realName: '', deptId: null, role: 'viewer' })
 
 const roleDialogVisible = ref(false)
 const assignRoleValue = ref('viewer')
 const assignUserId = ref<number | null>(null)
 
+function fetchDeptList() {
+  getDeptList().then(res => { if (res.code === 0) deptList.value = res.data as DeptItem[] }).catch(() => {})
+}
+function fetchUserList() {
+  getUserList({ page: userPage.value, page_size: userPageSize.value }).then(res => {
+    if (res.code === 0) { userList.value = res.data.items; userTotal.value = res.data.total }
+  }).catch(() => {})
+}
+function handleUserPageChange(p: number) { userPage.value = p }
+function handleUserSizeChange(s: number) { userPageSize.value = s; userPage.value = 1 }
+
+watch(activeTab, (tab) => { if (tab === 'dept') fetchDeptList(); else { userPage.value = 1; fetchUserList() } })
+watch([userPage, userPageSize], () => { if (activeTab.value === 'user') fetchUserList() })
+
 function openDeptDialog(row?: DeptItem) {
   deptIsEdit.value = !!row
+  deptEditId.value = row?.id ?? null
   deptForm.value = row ? { name: row.name, manager: row.manager } : { name: '', manager: '' }
   deptDialogVisible.value = true
 }
-function handleSaveDept() { deptDialogVisible.value = false }
-function handleDeleteDept(id: number) { }
+async function handleSaveDept() {
+  try {
+    let res
+    if (deptIsEdit.value && deptEditId.value) {
+      res = await updateDept(deptEditId.value, deptForm.value)
+    } else {
+      res = await createDept(deptForm.value)
+    }
+    if (res.code === 0) { ElMessage.success(deptIsEdit.value ? '编辑成功' : '新增成功'); deptDialogVisible.value = false; fetchDeptList() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch { ElMessage.error('网络错误') }
+}
+async function handleDeleteDept(id: number) {
+  try {
+    const res = await deleteDept(id)
+    if (res.code === 0) { ElMessage.success('删除成功'); fetchDeptList() }
+  } catch { ElMessage.error('网络错误') }
+}
 
 function openUserDialog(row?: UserItem) {
   userIsEdit.value = !!row
-  userForm.value = row ? { username: row.username, realName: row.realName, deptId: null, role: row.role } : { username: '', realName: '', deptId: null, role: 'viewer' }
+  userEditId.value = row?.id ?? null
+  userForm.value = row
+    ? { username: row.username, realName: row.realName, deptId: null, role: row.role }
+    : { username: '', realName: '', deptId: null, role: 'viewer' }
   userDialogVisible.value = true
 }
-function handleSaveUser() { userDialogVisible.value = false }
-function handleDeleteUser(id: number) { }
+async function handleSaveUser() {
+  try {
+    let res
+    if (userIsEdit.value && userEditId.value) {
+      res = await updateUser(userEditId.value, userForm.value as Record<string, unknown>)
+    } else {
+      res = await createUser(userForm.value)
+    }
+    if (res.code === 0) { ElMessage.success(userIsEdit.value ? '编辑成功' : '新增成功'); userDialogVisible.value = false; fetchUserList() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch { ElMessage.error('网络错误') }
+}
+async function handleDeleteUser(id: number) {
+  try {
+    const res = await deleteUser(id)
+    if (res.code === 0) { ElMessage.success('删除成功'); fetchUserList() }
+  } catch { ElMessage.error('网络错误') }
+}
 function openRoleDialog(row: UserItem) { assignUserId.value = row.id; assignRoleValue.value = row.role; roleDialogVisible.value = true }
-function handleAssignRole() { roleDialogVisible.value = false }
+async function handleAssignRole() {
+  if (!assignUserId.value) return
+  try {
+    const res = await updateUser(assignUserId.value, { role: assignRoleValue.value } as Record<string, unknown>)
+    if (res.code === 0) { ElMessage.success('角色分配成功'); roleDialogVisible.value = false; fetchUserList() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch { ElMessage.error('网络错误') }
+}
+
+onMounted(() => { fetchDeptList() })
 </script>

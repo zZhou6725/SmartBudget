@@ -79,10 +79,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
 import TableWrapper from '@/components/TableWrapper.vue'
 import { NotifyTypeMap, NotifyStatusMap, type NotificationItem } from '@/types/notification'
+import { getNotificationList, markAsRead, markAllAsRead, deleteNotification } from '@/api/modules/notification'
 
 const query = ref({ type: '', status: '', page: 1, pageSize: 10 })
 const tableData = ref<NotificationItem[]>([])
@@ -90,13 +92,40 @@ const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
 
 function typeTagType(type: string) { return type === 'alert' ? 'danger' : type === 'approval' ? 'warning' : 'info' }
 
-function handleQuery() { query.value.page = 1 }
-function handleReset() { query.value = { type: '', status: '', page: 1, pageSize: 10 } }
-function handlePageChange(p: number) { pagination.page = p }
-function handleSizeChange(s: number) { pagination.pageSize = s }
-function handleMarkRead(id: number) { /* TODO */ }
-function handleReadAll() { /* TODO */ }
-function handleDelete(id: number) { /* TODO */ }
+async function fetchList() {
+  try {
+    const res = await getNotificationList({ ...query.value } as Record<string, unknown>)
+    if (res.code === 0) { tableData.value = res.data.items; pagination.total = res.data.total }
+  } catch { /* ignore */ }
+}
+
+function handleQuery() { query.value.page = 1; pagination.page = 1; fetchList() }
+function handleReset() { query.value = { type: '', status: '', page: 1, pageSize: 10 }; pagination.page = 1; pagination.pageSize = 10; fetchList() }
+function handlePageChange(p: number) { pagination.page = p; query.value.page = p; fetchList() }
+function handleSizeChange(s: number) { pagination.pageSize = s; query.value.pageSize = s; query.value.page = 1; pagination.page = 1; fetchList() }
+
+async function handleMarkRead(id: number) {
+  try {
+    const res = await markAsRead(id)
+    if (res.code === 0) { ElMessage.success('已标记为已读'); fetchList() }
+  } catch { ElMessage.error('网络错误') }
+}
+
+async function handleReadAll() {
+  try {
+    const res = await markAllAsRead()
+    if (res.code === 0) { ElMessage.success('已全部标记为已读'); fetchList() }
+  } catch { ElMessage.error('网络错误') }
+}
+
+async function handleDelete(id: number) {
+  try {
+    const res = await deleteNotification(id)
+    if (res.code === 0) { ElMessage.success('删除成功'); fetchList() }
+  } catch { ElMessage.error('网络错误') }
+}
+
+onMounted(() => { fetchList() })
 </script>
 
 <style scoped>

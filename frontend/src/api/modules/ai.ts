@@ -1,30 +1,65 @@
+import { get, post } from '@/api/index'
 import type { ApiResponse } from '@/types/global'
-import type { QuickPrompt, AIChatRequest, AIReply, ReceiptValidateRequest, ReceiptValidateResult } from '@/types/ai'
+import type { QuickPrompt, ReceiptValidateRequest, ReceiptValidateResult } from '@/types/ai'
 
-// import http from '@/api/index'
+export async function getQuickPrompts() {
+  return get<QuickPrompt[]>('/ai/prompts')
+}
 
-/**
- * AI 对话
- * POST /api/v1/ai/chat
- */
-// export async function aiChat(data: AIChatRequest): Promise<ApiResponse<AIReply>> {
-//   return http.post('/ai/chat', data)
-// }
+export async function receiptValidate(data: ReceiptValidateRequest) {
+  return post<ReceiptValidateResult>('/ai/receipt-validate', data as Record<string, unknown>)
+}
 
-/**
- * 票据校验（LLM识别）
- * POST /api/v1/ai/receipt-validate
- */
-// export async function receiptValidate(data: ReceiptValidateRequest): Promise<ApiResponse<ReceiptValidateResult>> {
-//   return http.post('/ai/receipt-validate', data)
-// }
+export async function receiptUpload(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return post<ReceiptValidateResult>('/ai/receipt-upload', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
 
 /**
- * 获取快捷提问列表
- * GET /api/v1/ai/prompts
+ * 流式 AI 对话 — 返回 async generator，支持 AbortController 取消
+ * 用法: const ctrl = new AbortController()
+ *       for await (const chunk of streamChat(message, ctrl.signal)) { ... }
  */
-// export async function getQuickPrompts(): Promise<ApiResponse<QuickPrompt[]>> {
-//   return http.get('/ai/prompts')
-// }
+export async function* streamChat(
+  message: string,
+  signal?: AbortSignal,
+): AsyncGenerator<{ content: string; thinking: string; done: boolean }> {
+  const token = localStorage.getItem('finbalance-token')
+  const resp = await fetch('/api/v1/ai/chat/stream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ message }),
+    signal,
+  })
 
-export {}
+  if (!resp.ok || !resp.body) {
+    yield { content: `请求失败（${resp.status}）`, thinking: '', done: true }
+    return
+  }
+
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6))
+          yield { content: data.content || '', thinking: data.thinking || '', done: !!data.done }
+        } catch { /* skip parse errors */ }
+      }
+    }
+  }
+}

@@ -22,15 +22,25 @@
           class="chat-container__bubble"
           :class="item.role === 'user' ? 'chat-container__bubble--user' : 'chat-container__bubble--ai'"
         >
-          <span class="chat-container__bubble-text">{{ item.content }}</span>
+          <slot name="bubble-content" :item="item">
+            <span class="chat-container__bubble-text">{{ item.content }}</span>
+          </slot>
           <span class="chat-container__bubble-time">{{ item.time }}</span>
+        </div>
+      </div>
+      <!-- 打字指示器 -->
+      <div v-if="loading" class="chat-container__bubble-row chat-container__bubble-row--left">
+        <div class="chat-container__bubble chat-container__bubble--ai">
+          <span class="chat-container__typing">
+            <i></i><i></i><i></i>
+          </span>
         </div>
       </div>
     </div>
 
     <!-- 底部输入栏 -->
     <div class="chat-container__input-bar">
-      <el-button class="chat-container__attach-btn" text>
+      <el-button class="chat-container__attach-btn" text @click="emit('upload')">
         <el-icon :size="20"><Paperclip /></el-icon>
       </el-button>
       <el-input
@@ -60,16 +70,19 @@ interface Props {
   title?: string
   subtitle?: string
   chatList?: ChatItem[]
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: 'AI 财务助手',
   subtitle: '',
   chatList: () => [],
+  loading: false,
 })
 
 const emit = defineEmits<{
   (e: 'send', content: string): void
+  (e: 'upload'): void
 }>()
 
 const inputText = ref('')
@@ -197,6 +210,30 @@ watch(
 
 .chat-container__attach-btn {
   color: var(--text-placeholder);
+}
+
+/* 打字指示器 */
+.chat-container__typing {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.chat-container__typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-placeholder);
+  animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.chat-container__typing i:nth-child(1) { animation-delay: -0.32s; }
+.chat-container__typing i:nth-child(2) { animation-delay: -0.16s; }
+.chat-container__typing i:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: scale(0.6); }
+  40% { transform: scale(1); }
 }
 
 .chat-container__input {

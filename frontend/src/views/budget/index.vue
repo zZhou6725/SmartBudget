@@ -9,43 +9,47 @@
       <!-- 统计摘要 -->
       <el-row :gutter="16" class="budget__summary">
         <el-col :span="6">
-          <div class="budget__summary-item">
+          <div class="budget__summary-item" style="border-top-color: var(--color-primary)">
+            <span class="budget__summary-dot" style="background: var(--color-primary)" />
             <span class="budget__summary-label">总预算</span>
-            <span class="budget__summary-value">{{ fmt(summary.totalBudget) }}</span>
+            <span class="budget__summary-value" style="color: var(--color-primary)">{{ fmt(summary.totalBudget) }}</span>
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="budget__summary-item budget__summary-item--warning">
+          <div class="budget__summary-item" style="border-top-color: var(--color-warning)">
+            <span class="budget__summary-dot" style="background: var(--color-warning)" />
             <span class="budget__summary-label">已使用</span>
-            <span class="budget__summary-value">{{ fmt(summary.totalUsed) }}</span>
+            <span class="budget__summary-value" style="color: var(--color-warning)">{{ fmt(summary.totalUsed) }}</span>
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="budget__summary-item budget__summary-item--success">
+          <div class="budget__summary-item" style="border-top-color: var(--color-success)">
+            <span class="budget__summary-dot" style="background: var(--color-success)" />
             <span class="budget__summary-label">剩余</span>
-            <span class="budget__summary-value">{{ fmt(summary.totalRemaining) }}</span>
+            <span class="budget__summary-value" style="color: var(--color-success)">{{ fmt(summary.totalRemaining) }}</span>
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="budget__summary-item">
+          <div class="budget__summary-item" style="border-top-color: var(--color-purple)">
+            <span class="budget__summary-dot" style="background: var(--color-purple)" />
             <span class="budget__summary-label">平均使用率</span>
-            <span class="budget__summary-value">{{ summary.avgUsageRate }}%</span>
+            <span class="budget__summary-value" style="color: var(--color-purple)">{{ summary.avgUsageRate }}%</span>
           </div>
         </el-col>
       </el-row>
 
       <!-- 筛选 -->
-      <el-form :model="query" inline class="budget__filter">
+      <el-form inline class="budget__filter">
         <el-form-item label="关键字">
-          <el-input v-model="query.keyword" placeholder="部门名称" clearable />
+          <el-input v-model="filterKeyword" placeholder="部门名称" clearable />
         </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="query.deptName" placeholder="全部" clearable>
+          <el-select v-model="filterDeptName" placeholder="全部" clearable>
             <el-option v-for="d in deptOptions" :key="d" :label="d" :value="d" />
           </el-select>
         </el-form-item>
         <el-form-item label="年份">
-          <el-select v-model="query.year" placeholder="全部" clearable>
+          <el-select v-model="filterYear" placeholder="全部" clearable>
             <el-option v-for="y in yearOptions" :key="y" :label="String(y)" :value="y" />
           </el-select>
         </el-form-item>
@@ -60,9 +64,9 @@
         :data="tableData"
         :empty="tableData.length === 0"
         :show-pagination="true"
-        :total="pagination.total"
-        :current-page="pagination.page"
-        :page-size="pagination.pageSize"
+        :total="total"
+        :current-page="page"
+        :page-size="pageSize"
         @page-change="handlePageChange"
         @size-change="handleSizeChange"
       >
@@ -173,50 +177,82 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
 import TableWrapper from '@/components/TableWrapper.vue'
-import type { BudgetItem, BudgetForm, BudgetAdjustForm, BudgetQuery, BudgetSummary } from '@/types/budget'
+import type { BudgetItem, BudgetForm, BudgetAdjustForm, BudgetSummary } from '@/types/budget'
+import {
+  getBudgetList, getBudgetSummary, createBudget, updateBudget,
+  adjustBudget, deleteBudget,
+} from '@/api/modules/budget'
+import { getDeptList } from '@/api/modules/organization'
 
-/** 统计摘要 */
-const summary = ref<BudgetSummary>({
-  totalBudget: 0,
-  totalUsed: 0,
-  totalRemaining: 0,
-  avgUsageRate: 0,
-})
-
-/** 筛选 */
-const query = ref<BudgetQuery>({ keyword: '', page: 1, pageSize: 10 })
-const deptOptions = ref<string[]>([])
+const summary = ref<BudgetSummary>({ totalBudget: 0, totalUsed: 0, totalRemaining: 0, avgUsageRate: 0 })
+const filterKeyword = ref('')
+const filterDeptName = ref('')
+const filterYear = ref<number | null>(null)
 const yearOptions = ref<number[]>([2024, 2025, 2026, 2027])
 
-/** 表格 */
+const deptOptions = ref<string[]>([])
 const tableData = ref<BudgetItem[]>([])
-const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
-/** 新增/编辑 */
-const dialogVisible = ref(false)
-const isEdit = ref(false)
-const editId = ref<number | null>(null)
-const form = ref<BudgetForm>({ deptName: '', year: 2026, totalAmount: null })
-
-/** 调整 */
-const adjustVisible = ref(false)
-const adjustTarget = ref<BudgetItem | null>(null)
-const adjustForm = ref<BudgetAdjustForm>({ direction: 'add', amount: null, reason: '' })
+const dialogVisible = ref(false); const isEdit = ref(false); const editId = ref<number | null>(null)
+const form = ref<BudgetForm>({ deptName: '', year: 2026, totalAmount: 0 })
+const adjustVisible = ref(false); const adjustTarget = ref<BudgetItem | null>(null)
+const adjustForm = ref<BudgetAdjustForm>({ direction: 'add', amount: 0, reason: '' })
 
 function fmt(v: number) { return v ? `¥${v.toLocaleString()}` : '--' }
 function usageColor(rate: number) { return rate > 80 ? 'var(--color-danger)' : rate > 60 ? 'var(--color-warning)' : 'var(--color-primary)' }
 
-function handleQuery() { query.value.page = 1 }
-function handleReset() { query.value = { page: 1, pageSize: 10 } }
-function handlePageChange(p: number) { pagination.page = p }
-function handleSizeChange(s: number) { pagination.pageSize = s }
+async function fetchList() {
+  try {
+    const q: Record<string, unknown> = {
+      keyword: filterKeyword.value || undefined,
+      dept_name: filterDeptName.value || undefined,
+      year: filterYear.value || undefined,
+      page: page.value,
+      page_size: pageSize.value,
+    }
+    const res = await getBudgetList(q as Record<string, unknown>)
+    if (res.code === 0) { tableData.value = res.data.items; total.value = res.data.total }
+  } catch { /* ignore */ }
+}
+
+async function fetchSummary() {
+  try {
+    const res = await getBudgetSummary()
+    if (res.code === 0) summary.value = res.data as BudgetSummary
+  } catch { /* ignore */ }
+}
+
+async function fetchDeptOptions() {
+  try {
+    const res = await getDeptList()
+    if (res.code === 0 && Array.isArray(res.data)) {
+      deptOptions.value = res.data.map((d: { name: string }) => d.name)
+    }
+  } catch { /* ignore */ }
+}
+
+function handleQuery() { page.value = 1; fetchList() }
+function handleReset() {
+  filterKeyword.value = ''
+  filterDeptName.value = ''
+  filterYear.value = null
+  page.value = 1
+  pageSize.value = 10
+  fetchList()
+}
+function handlePageChange(p: number) { page.value = p; fetchList() }
+function handleSizeChange(s: number) { pageSize.value = s; page.value = 1; fetchList() }
 
 function openCreateDialog() {
   isEdit.value = false; editId.value = null
-  form.value = { deptName: '', year: 2026, totalAmount: null }
+  form.value = { deptName: '', year: 2026, totalAmount: 0 }
   dialogVisible.value = true
 }
 function openEditDialog(row: BudgetItem) {
@@ -224,30 +260,83 @@ function openEditDialog(row: BudgetItem) {
   form.value = { deptName: row.deptName, year: row.year, totalAmount: row.totalAmount }
   dialogVisible.value = true
 }
-function handleSave() { dialogVisible.value = false }
+async function handleSave() {
+  if (!form.value.deptName || !form.value.totalAmount) {
+    ElMessage.warning('请填写部门和预算总额')
+    return
+  }
+  try {
+    let res
+    if (isEdit.value && editId.value) {
+      res = await updateBudget(editId.value, form.value as Record<string, unknown>)
+    } else {
+      res = await createBudget(form.value as Record<string, unknown>)
+    }
+    if (res.code === 0) { ElMessage.success(isEdit.value ? '编辑成功' : '新增成功'); dialogVisible.value = false; fetchList(); fetchSummary() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail?.[0]?.msg || e?.response?.data?.msg || '网络错误'
+    ElMessage.error(msg)
+  }
+}
 
 function openAdjustDialog(row: BudgetItem) {
   adjustTarget.value = row
-  adjustForm.value = { direction: 'add', amount: null, reason: '' }
+  adjustForm.value = { direction: 'add', amount: 0, reason: '' }
   adjustVisible.value = true
 }
-function handleAdjust() { adjustVisible.value = false }
+async function handleAdjust() {
+  if (!adjustTarget.value) return
+  if (!adjustForm.value.amount) { ElMessage.warning('请输入调整金额'); return }
+  try {
+    const res = await adjustBudget(adjustTarget.value.id, adjustForm.value as Record<string, unknown>)
+    if (res.code === 0) { ElMessage.success('调整成功'); adjustVisible.value = false; fetchList(); fetchSummary() }
+    else { ElMessage.error(res.msg || '操作失败') }
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail?.[0]?.msg || e?.response?.data?.msg || '网络错误'
+    ElMessage.error(msg)
+  }
+}
 
-function handleDelete(id: number) { /* TODO */ }
+async function handleDelete(id: number) {
+  try {
+    const res = await deleteBudget(id)
+    if (res.code === 0) { ElMessage.success('删除成功'); fetchList(); fetchSummary() }
+    else { ElMessage.error(res.msg || '删除失败') }
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail?.[0]?.msg || e?.response?.data?.msg || '网络错误'
+    ElMessage.error(msg)
+  }
+}
+
+onMounted(() => { fetchList(); fetchSummary(); fetchDeptOptions() })
 </script>
 
 <style scoped>
 .budget__summary { margin-bottom: 16px; }
 .budget__summary-item {
-  background: var(--bg-page);
+  background: var(--bg-card);
+  border: 1px solid var(--border-normal);
+  border-top: 3px solid var(--color-primary);
   border-radius: var(--border-radius-base);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  box-shadow: var(--box-shadow-base);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.budget__summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.budget__summary-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-bottom: 2px;
 }
 .budget__summary-label { font-size: 12px; color: var(--text-placeholder); }
-.budget__summary-value { font-size: 20px; font-weight: 600; color: var(--text-title); }
+.budget__summary-value { font-size: 20px; font-weight: 700; }
 .budget__summary-item--warning .budget__summary-value { color: var(--color-warning); }
 .budget__summary-item--success .budget__summary-value { color: var(--color-success); }
 .budget__filter { margin-bottom: 16px; }
