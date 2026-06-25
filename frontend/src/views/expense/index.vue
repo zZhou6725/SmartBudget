@@ -7,37 +7,37 @@
       </template>
 
       <!-- 筛选栏 -->
-      <el-form :model="query" inline class="expense__filter">
+      <el-form inline class="expense__filter">
         <el-form-item label="关键字">
-          <el-input v-model="query.keyword" placeholder="报销单号/标题" clearable />
+          <el-input v-model="filterKeyword" placeholder="报销单号/标题" clearable />
         </el-form-item>
         <el-form-item label="报销类型">
-          <el-select v-model="query.category" placeholder="全部" clearable>
+          <el-select v-model="filterCategory" placeholder="全部" clearable>
             <el-option
-              v-for="(label, value) in ExpenseCategoryMap"
-              :key="value"
-              :label="label"
-              :value="value"
+              v-for="opt in categoryOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="query.deptName" placeholder="全部" clearable>
+          <el-select v-model="filterDeptName" placeholder="全部" clearable>
             <el-option
-              v-for="dept in deptOptions"
-              :key="dept"
-              :label="dept"
-              :value="dept"
+              v-for="opt in deptOptions"
+              :key="opt"
+              :label="opt"
+              :value="opt"
             />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable>
+          <el-select v-model="filterStatus" placeholder="全部" clearable>
             <el-option
-              v-for="(label, value) in ExpenseStatusMap"
-              :key="value"
-              :label="label"
-              :value="value"
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
             />
           </el-select>
         </el-form-item>
@@ -60,29 +60,33 @@
       <!-- 统计摘要 -->
       <el-row :gutter="16" class="expense__summary">
         <el-col :span="6">
-          <div class="expense__summary-item">
+          <div class="expense__summary-item" style="border-top-color: var(--color-primary)">
+            <span class="expense__summary-dot" style="background: var(--color-primary)" />
             <span class="expense__summary-label">报销总额</span>
-            <span class="expense__summary-value">
+            <span class="expense__summary-value" style="color: var(--color-primary)">
               {{ summary.totalAmount ? '¥' + summary.totalAmount.toLocaleString() : '--' }}
             </span>
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="expense__summary-item expense__summary-item--warning">
+          <div class="expense__summary-item" style="border-top-color: var(--color-warning)">
+            <span class="expense__summary-dot" style="background: var(--color-warning)" />
             <span class="expense__summary-label">待审批</span>
-            <span class="expense__summary-value">{{ summary.pendingCount }} 笔</span>
+            <span class="expense__summary-value" style="color: var(--color-warning)">{{ summary.pendingCount }} 笔</span>
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="expense__summary-item expense__summary-item--success">
+          <div class="expense__summary-item" style="border-top-color: var(--color-success)">
+            <span class="expense__summary-dot" style="background: var(--color-success)" />
             <span class="expense__summary-label">已通过</span>
-            <span class="expense__summary-value">{{ summary.approvedCount }} 笔</span>
+            <span class="expense__summary-value" style="color: var(--color-success)">{{ summary.approvedCount }} 笔</span>
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="expense__summary-item expense__summary-item--danger">
+          <div class="expense__summary-item" style="border-top-color: var(--color-danger)">
+            <span class="expense__summary-dot" style="background: var(--color-danger)" />
             <span class="expense__summary-label">已驳回</span>
-            <span class="expense__summary-value">{{ summary.rejectedCount }} 笔</span>
+            <span class="expense__summary-value" style="color: var(--color-danger)">{{ summary.rejectedCount }} 笔</span>
           </div>
         </el-col>
       </el-row>
@@ -92,9 +96,9 @@
         :data="tableData"
         :empty="tableData.length === 0"
         :show-pagination="true"
-        :total="pagination.total"
-        :current-page="pagination.page"
-        :page-size="pagination.pageSize"
+        :total="total"
+        :current-page="page"
+        :page-size="pageSize"
         @page-change="handlePageChange"
         @size-change="handleSizeChange"
       >
@@ -159,10 +163,10 @@
         <el-form-item label="报销类型" required>
           <el-select v-model="form.category" placeholder="请选择">
             <el-option
-              v-for="(label, value) in ExpenseCategoryMap"
-              :key="value"
-              :label="label"
-              :value="value"
+              v-for="opt in categoryOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
             />
           </el-select>
         </el-form-item>
@@ -172,10 +176,10 @@
         <el-form-item label="所属部门" required>
           <el-select v-model="form.deptName" placeholder="请选择">
             <el-option
-              v-for="dept in deptOptions"
-              :key="dept"
-              :label="dept"
-              :value="dept"
+              v-for="opt in deptOptions"
+              :key="opt"
+              :label="opt"
+              :value="opt"
             />
           </el-select>
         </el-form-item>
@@ -259,14 +263,32 @@
         <div class="expense__detail-section">
           <span class="expense__detail-section-title">审批记录</span>
           <el-timeline>
-            <el-timeline-item timestamp="提交时间" placement="top" type="primary">
+            <el-timeline-item :timestamp="detailItem.applyDate || '--'" placement="top" type="primary">
               {{ detailItem.applicant }} 提交报销申请
             </el-timeline-item>
-            <el-timeline-item timestamp="待处理" placement="top" color="#bbb">
-              部门经理审批（待实现）
+            <el-timeline-item
+              v-if="detailItem.status === 'pending'"
+              timestamp="处理中"
+              placement="top"
+              color="var(--color-warning)"
+            >
+              等待审批中
             </el-timeline-item>
-            <el-timeline-item timestamp="待处理" placement="top" color="#bbb">
-              财务审核（待实现）
+            <el-timeline-item
+              v-if="detailItem.status === 'approved'"
+              :timestamp="detailItem.updatedAt || detailItem.applyDate"
+              placement="top"
+              type="success"
+            >
+              已通过审批
+            </el-timeline-item>
+            <el-timeline-item
+              v-if="detailItem.status === 'rejected'"
+              :timestamp="detailItem.updatedAt || detailItem.applyDate"
+              placement="top"
+              type="danger"
+            >
+              审批驳回
             </el-timeline-item>
           </el-timeline>
         </div>
@@ -277,7 +299,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Paperclip } from '@element-plus/icons-vue'
 import PageCard from '@/components/PageCard.vue'
@@ -295,13 +317,22 @@ import {
   getExpenseList, getExpenseSummary, getExpenseDetail,
   createExpense, updateExpense, deleteExpense,
 } from '@/api/modules/expense'
+import { getDeptList } from '@/api/modules/organization'
 
-const query = ref<ExpenseQuery>({ keyword: '', page: 1, pageSize: 10 })
+const filterKeyword = ref('')
+const filterCategory = ref('')
+const filterDeptName = ref('')
+const filterStatus = ref('')
 const dateRange = ref<string[]>([])
 
 const summary = ref<ExpenseSummary>({ totalAmount: 0, pendingCount: 0, approvedCount: 0, rejectedCount: 0 })
 const tableData = ref<ExpenseItem[]>([])
-const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+const categoryOptions = Object.entries(ExpenseCategoryMap).map(([value, label]) => ({ value, label }))
+const statusOptions = Object.entries(ExpenseStatusMap).map(([value, label]) => ({ value, label }))
 
 const deptOptions = ref<string[]>([])
 const budgetOptions = ref<{ id: number; name: string; remaining: number }[]>([])
@@ -322,19 +353,19 @@ async function fetchList() {
   try {
     const [startDate, endDate] = dateRange.value
     const q: Record<string, unknown> = {
-      keyword: query.value.keyword || undefined,
-      category: query.value.category || undefined,
-      dept_name: query.value.deptName || undefined,
-      status: query.value.status || undefined,
-      page: query.value.page,
-      page_size: query.value.pageSize,
+      keyword: filterKeyword.value || undefined,
+      category: filterCategory.value || undefined,
+      dept_name: filterDeptName.value || undefined,
+      status: filterStatus.value || undefined,
+      page: page.value,
+      page_size: pageSize.value,
     }
     if (startDate) q.start_date = startDate
     if (endDate) q.end_date = endDate
     const res = await getExpenseList(q as ExpenseQuery)
     if (res.code === 0) {
       tableData.value = res.data.items
-      pagination.total = res.data.total
+      total.value = res.data.total
     }
   } catch { /* ignore */ }
 }
@@ -347,30 +378,38 @@ async function fetchSummary() {
 }
 
 function handleQuery() {
-  query.value.page = 1
-  pagination.page = 1
+  page.value = 1
   fetchList()
 }
 
 function handleReset() {
-  query.value = { keyword: '', page: 1, pageSize: 10 }
+  filterKeyword.value = ''
+  filterCategory.value = ''
+  filterDeptName.value = ''
+  filterStatus.value = ''
   dateRange.value = []
-  pagination.page = 1
-  pagination.pageSize = 10
+  page.value = 1
+  pageSize.value = 10
   fetchList()
 }
 
-function handlePageChange(page: number) {
-  query.value.page = page
-  pagination.page = page
+async function fetchDeptOptions() {
+  try {
+    const res = await getDeptList()
+    if (res.code === 0 && Array.isArray(res.data)) {
+      deptOptions.value = res.data.map((d: { name: string }) => d.name)
+    }
+  } catch { /* ignore */ }
+}
+
+function handlePageChange(p: number) {
+  page.value = p
   fetchList()
 }
 
-function handleSizeChange(size: number) {
-  query.value.pageSize = size
-  pagination.pageSize = size
-  query.value.page = 1
-  pagination.page = 1
+function handleSizeChange(s: number) {
+  pageSize.value = s
+  page.value = 1
   fetchList()
 }
 
@@ -425,7 +464,7 @@ function statusTagType(status: string): string {
   return map[status] || 'info'
 }
 
-onMounted(() => { fetchList(); fetchSummary() })
+onMounted(() => { fetchList(); fetchSummary(); fetchDeptOptions() })
 </script>
 
 <style scoped>
@@ -438,12 +477,25 @@ onMounted(() => { fetchList(); fetchSummary() })
 }
 
 .expense__summary-item {
-  background: var(--bg-page);
+  background: var(--bg-card);
+  border: 1px solid var(--border-normal);
+  border-top: 3px solid var(--color-primary);
   border-radius: var(--border-radius-base);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  box-shadow: var(--box-shadow-base);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.expense__summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.expense__summary-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-bottom: 2px;
 }
 
 .expense__summary-label {

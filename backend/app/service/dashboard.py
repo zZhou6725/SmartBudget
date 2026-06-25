@@ -39,9 +39,10 @@ async def get_dept_rank(month: str | None = None) -> list[DeptRankItem]:
             base = base.filter(Expense.apply_date.like(f"{month}%"))
         rows = base.group_by(Expense.dept_name).order_by(func.sum(Expense.amount).desc()).all()
 
-        budgets: dict[str, float] = {}
-        for b in db.query(Budget).all():
-            budgets[b.dept_name] = budgets.get(b.dept_name, 0) + float(b.total_amount or 0)
+        budget_rows = db.query(
+            Budget.dept_name, func.sum(Budget.total_amount)
+        ).group_by(Budget.dept_name).all()
+        budgets = {r[0]: float(r[1] or 0) for r in budget_rows}
 
         result = []
         for r in rows:
@@ -87,15 +88,24 @@ async def get_budget_exec(year: int | None = None) -> list[BudgetExecItem]:
         if year:
             q = q.filter(Budget.year == year)
         budgets = q.all()
+        if not budgets:
+            return []
+
+        dept_names = list({b.dept_name for b in budgets})
+        used_rows = db.query(
+            Expense.dept_name,
+            func.sum(Expense.amount).label("used")
+        ).filter(
+            Expense.dept_name.in_(dept_names),
+            Expense.status == "approved",
+            Expense.deleted_at.is_(None),
+        ).group_by(Expense.dept_name).all()
+        used_map = {r[0]: float(r[1] or 0) for r in used_rows}
 
         result = []
         for b in budgets:
-            used = float(db.query(func.sum(Expense.amount)).filter(
-                Expense.dept_name == b.dept_name,
-                Expense.status == "approved",
-                Expense.deleted_at.is_(None)
-            ).scalar() or 0)
             total = float(b.total_amount or 0)
+            used = used_map.get(b.dept_name, 0)
             rate = round(used / total * 100, 1) if total > 0 else 0
             result.append(BudgetExecItem(dept_name=b.dept_name, budget=total, used=used, rate=rate))
         return result

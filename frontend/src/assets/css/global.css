@@ -6,9 +6,19 @@
   /* --- 品牌色系 --- */
   --color-primary: #165DFF;
   --color-primary-light: #E8F3FF;
+  --color-primary-bg: #F2F7FF;
   --color-success: #00B42A;
+  --color-success-light: #E8F8EC;
+  --color-success-bg: #F2F9F3;
   --color-warning: #FF7D00;
+  --color-warning-light: #FFF3E8;
+  --color-warning-bg: #FFF8F2;
   --color-danger: #F53F3F;
+  --color-danger-light: #FFEBEE;
+  --color-danger-bg: #FFF2F3;
+  --color-purple: #722ED1;
+  --color-purple-light: #F3EAFF;
+  --color-purple-bg: #F9F5FF;
 
   /* --- 文字色系 --- */
   --text-title: #1D2129;
